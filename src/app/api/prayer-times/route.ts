@@ -13,24 +13,18 @@ async function verifyAdminAuth(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const date = searchParams.get('date');
   const headerMasjidId = request.headers.get('x-masjid-id');
   const queryMasjidId = searchParams.get('masjidId');
   const MasjidId = headerMasjidId || queryMasjidId;
 
   try {
-    const whereClause: any = {
-      date: {
-        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-        lt: new Date(new Date().setHours(23, 59, 59, 999)),
-      },
-      Masjid: {
-        isActive: true,
-      },
-    };
+    let whereClause: any = {};
 
     if (MasjidId) {
       whereClause.masjidId = MasjidId;
+      whereClause.Masjid = { isActive: true };
+    } else {
+      whereClause.Masjid = { isActive: true };
     }
 
     const prayerTimes = await prisma.prayerTime.findFirst({
@@ -56,7 +50,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json({
-        message: 'No prayer times for today',
+        message: 'No prayer times found',
         Masjid: masjids,
         prayerTimes: null,
       });

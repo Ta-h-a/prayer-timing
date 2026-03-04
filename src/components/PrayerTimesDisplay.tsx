@@ -126,9 +126,13 @@ function setMasjidCookie(masjidId: string) {
 async function fetchPrayerTimes(masjidId: string): Promise<PrayerTime | null> {
   try {
     const res = await fetch(`/api/prayer-times?masjidId=${encodeURIComponent(masjidId)}`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error('API error:', res.status, await res.text());
+      return null;
+    }
     return await res.json();
-  } catch {
+  } catch (error) {
+    console.error('Fetch error:', error);
     return null;
   }
 }
@@ -138,6 +142,7 @@ export default function PrayerTimesDisplay({ masjids }: PrayerTimesDisplayProps)
   const [selectedMasjidId, setSelectedMasjidId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (masjids.length === 0) return;
@@ -155,10 +160,18 @@ export default function PrayerTimesDisplay({ masjids }: PrayerTimesDisplayProps)
     if (!selectedMasjidId || masjids.length === 0) return;
 
     setLoading(true);
+    setError(null);
     setMasjidCookie(selectedMasjidId);
 
-    fetchPrayerTimes(selectedMasjidId).then((data) => {
-      setPrayerTimes(data);
+    fetchPrayerTimes(selectedMasjidId).then((data: any) => {
+      if (data && data.id) {
+        setPrayerTimes(data);
+      } else {
+        setPrayerTimes(null);
+        if (data && data.error) {
+          setError(data.error);
+        }
+      }
       setLoading(false);
     });
   }, [selectedMasjidId, masjids.length]);
@@ -204,6 +217,22 @@ export default function PrayerTimesDisplay({ masjids }: PrayerTimesDisplayProps)
               <div key={i} className="h-[140px] bg-emerald-900/20 animate-pulse rounded-2xl border border-emerald-800/30"></div>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="flex flex-col items-center justify-center p-12 bg-red-950/40 border border-red-800/40 rounded-[2rem] backdrop-blur-xl">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 mb-4">
+            <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+          </svg>
+          <p className="text-red-50 text-xl font-medium mb-2">Error</p>
+          <p className="text-red-400/70 text-center max-w-sm">
+            {error}
+          </p>
         </div>
       </div>
     );
