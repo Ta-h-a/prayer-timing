@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Masjid {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  prayers   PrayerTime[]
+}
+
+model PrayerTime {
+  id        String   @id @default(cuid())
+  Masjid    Masjid   @relation(fields: [masjidId], references: [id], onDelete: Cascade)
+  masjidId  String
+  date      DateTime
+  fajr      String
+  dhuhr     String
+  asr       String
+  maghrib   String
+  isha      String
+  updatedAt DateTime @updatedAt
+
+  @@unique([masjidId, date])
+}
